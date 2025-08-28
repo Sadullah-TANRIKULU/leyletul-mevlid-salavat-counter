@@ -137,7 +137,7 @@
 
       async function updateTotal() {
         try {
-          let res = await fetch('http://localhost:3009/api/total');
+          let res = await fetch('https://leyletul-mevlid-salavat-counter.onrender.com/api/total');
           let data = await res.json();
           document.getElementById('total').textContent = data.total;
         } catch (e) {
@@ -154,7 +154,7 @@
         localStorage.setItem('dhikrCounter', counter);
         myDisplay.textContent = counter;
         try {
-          let res = await fetch('http://localhost:3009/api/increment', { method: 'POST' });
+          let res = await fetch('https://leyletul-mevlid-salavat-counter.onrender.com/api/increment', { method: 'POST' });
           let data = await res.json();
 
           // Update total count
