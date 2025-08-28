@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" style="background: #f7f7f2">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dhikr Collaborative Counter</title>
+    <link rel="manifest" href="manifest.json" />
+    <link
+      rel="shortcut icon"
+      href="./assets/WoodenRosary.png"
+      type="image/x-icon"
+    />
+    <!-- Google Font: Noto Naskh Arabic -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="theme-color" content="#C5D86D" />
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f7f7f2;
+        color: #260c1a;
+      }
+      .container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 1.5em;
+      }
+      .total-counter {
+        font-size: 2em;
+        margin-top: 2em;
+        color: #f05d23b3;
+        text-align: center;
+      }
+      .arabic-text {
+        font-family: 'Noto Naskh Arabic', serif;
+        font-size: 1.7em;
+        color: #260c1a;
+        text-align: center;
+        margin: 1.5em 0;
+        line-height: 1.4;
+        user-select: none;
+      }
+      .your-label {
+        margin-top: 2.5em;
+        text-align: center;
+        font-size: 1em;
+        color: #260c1ab3;
+      }
+      .my-counter {
+        font-size: 3em;
+        margin: 0.4em 0 1em 0;
+        text-align: center;
+        color: #c5d86db3;
+      }
+      .counter-btn {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 4%;
+        margin: auto;
+        background: #f05d23b3;
+        color: #fff;
+        border: none;
+        border-radius: 2em;
+        font-size: 2em;
+        width: 85vw;
+        max-width: 350px;
+        padding: 1em;
+        box-shadow: 0 3px 12px #260c1a33;
+        display: block;
+        cursor: pointer;
+        user-select: none;
+      }
+      @media (min-width: 401px) {
+        .counter-btn {
+          position: static;
+        }
+      }
+      /* Confetti canvas */
+      #confetti-canvas {
+        pointer-events: none;
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Confetti Canvas -->
+      <canvas id="confetti-canvas"></canvas>
+      <div class="total-counter">All Together: <span id="total">0</span></div>
+
+      <!-- Arabic text below total -->
+      <div class="arabic-text" dir="rtl" >
+        اللَّهُمَّ صَلِّ وَ سَلِّمْ عَلَى سَيِّدِنَا مُحَمَّدٍ وَعَلَى اَلِهِ وَ اَصْحَابِهِ
+      </div>
+
+      <div class="your-label">Your count:</div>
+      <div id="myCounter" class="my-counter">0</div>
+      <button class="counter-btn" id="dhikrBtn">+1 Dhikr</button>
+    </div>
+
+
+    <footer style="position: fixed; bottom: 0; left: 0; font-size: small;">
+      <a
+        href="https://iconscout.com/3d-icons/wooden-rosary"
+        class="text-underline font-size-sm"
+        target="_blank"
+        >Wooden Rosary</a
+      >
+      by
+      <a
+        href="https://iconscout.com/contributors/alper-guzeler"
+        class="text-underline font-size-sm"
+        >Alper Guzeler</a
+      >
+      on
+      <a href="https://iconscout.com" class="text-underline font-size-sm"
+        >IconScout</a
+      >
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <script>
+      // Local counter
+      let counter = parseInt(localStorage.getItem('dhikrCounter')) || 0;
+      const myDisplay = document.getElementById('myCounter');
+      myDisplay.textContent = counter;
+
+      async function updateTotal() {
+        try {
+          let res = await fetch('http://localhost:3009/api/total');
+          let data = await res.json();
+          document.getElementById('total').textContent = data.total;
+        } catch (e) {
+          /* offline: do nothing */
+        }
+      }
+      updateTotal(); // on load
+
+      // Confetti canvas element
+      const confettiCanvas = document.getElementById('confetti-canvas');
+
+      document.getElementById('dhikrBtn').addEventListener('click', async () => {
+        counter++;
+        localStorage.setItem('dhikrCounter', counter);
+        myDisplay.textContent = counter;
+        try {
+          let res = await fetch('http://localhost:3009/api/increment', { method: 'POST' });
+          let data = await res.json();
+
+          // Update total count
+          const totalCount = data.total;
+          document.getElementById('total').textContent = totalCount;
+
+          // Show confetti every 70 Dhikr
+          if (totalCount % 70 === 0) {
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              canvas: confettiCanvas,
+              colors: ['#C5D86D', '#F05D23', '#260C1A'],
+            });
+          }
+        } catch (e) {
+          /* offline: do nothing */
+        }
+      });
+
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('./serviceworker.js')
+          .then(reg => {
+            console.log('Service Worker registered!', reg.scope);
+          })
+          .catch(err => {
+            console.log('SW registration failed:', err);
+          });
+      }
+    </script>
+  </body>
+</html>
